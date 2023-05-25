@@ -9,7 +9,7 @@ const Header = () => {
           <div className="flex items-center justify-between">
             <div className="text-xl">
               <h1 className="text-2xl font-bold text-white lg:text-3xl">
-                Spotify GP
+                <span className="text-green-600">S</span>potify GP
               </h1>
             </div>
           </div>
