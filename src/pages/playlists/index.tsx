@@ -1,10 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 
-import { useEffect } from "react";
-
-// tRPC API
 import { api } from "~/utils/api";
+
+import { isAccessTokenExpired } from "~/utils/token_expired";
 
 // Custom SWR
 import { useSpotifyPlaylists } from "~/hooks/api/spotify";
@@ -13,22 +12,8 @@ import { useSpotifyPlaylists } from "~/hooks/api/spotify";
 import Loading from "~/pages/loading";
 
 const Playlists = () => {
-  useEffect(() => {
-    console.log(isAccessTokenExpired());
-    console.log(accessTokenExpiredAt);
-    console.log(currentExpiredAt);
-  });
-  // 現在の時間（UNIX時間）
-  const currentExpiredAt = new Date(Date.now() / 1000).getTime();
-
   const accountData = api.account.getToken.useQuery();
   const accessTokenExpiredAt = accountData.data?.account.expired_at;
-
-  // アクセストークンの期限が切れていれば、trueを返す
-  const isAccessTokenExpired = () => {
-    if (!accessTokenExpiredAt) return;
-    return accessTokenExpiredAt < currentExpiredAt;
-  };
 
   const { playlists, isLoading, isError } = useSpotifyPlaylists();
 
@@ -37,9 +22,9 @@ const Playlists = () => {
 
   return (
     <div className="flex justify-center">
-      {isAccessTokenExpired() ? (
+      {isAccessTokenExpired(accessTokenExpiredAt) ? (
         <div className="flex h-screen items-center justify-center">
-          <h1 className="text-2xl">Spotifyの認証に失敗しました</h1>
+          <h1 className="text-2xl text-white">Spotifyの認証に失敗しました</h1>
         </div>
       ) : (
         <div>
@@ -57,8 +42,8 @@ const Playlists = () => {
                         <Image
                           src={item.images[0]?.url ?? ""}
                           alt={item.name}
-                          width={200}
-                          height={200}
+                          width={100}
+                          height={100}
                           style={{ objectFit: "contain" }}
                         />
                         <h1>{item.name}</h1>
@@ -73,7 +58,7 @@ const Playlists = () => {
               </div>
             </div>
           ) : (
-            <Loading />
+            <div>home</div>
           )}
         </div>
       )}
