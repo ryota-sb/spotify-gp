@@ -13,7 +13,7 @@ export interface PlaylistImage {
   url: string;
 }
 
-export interface Playlist {
+export interface PlaylistObject {
   collaborative: boolean;
   description: string;
   external_urls: { spotify: string };
@@ -35,7 +35,7 @@ export interface Playlist {
 
 export interface PlaylistsObject {
   href: string;
-  items: Playlist[];
+  items: PlaylistObject[];
 }
 
 interface TrackImage {
