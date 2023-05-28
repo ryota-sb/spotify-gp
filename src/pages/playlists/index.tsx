@@ -1,5 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
+import { useState, useEffect } from "react";
+
+import type { PlaylistsObject, PlaylistObject, Tracks } from "~/server/types";
 
 import { api } from "~/utils/api";
 
@@ -12,10 +15,57 @@ import { useSpotifyPlaylists } from "~/hooks/api/spotify";
 import Loading from "~/pages/loading";
 
 const Playlists = () => {
+  // 選択したプレイリストを格納する配列
+  const [mixPlaylists, setMixPlaylists] = useState<PlaylistsObject>({
+    items: [],
+  });
+
+  useEffect(() => {
+    console.log(mixPlaylists);
+  });
+
   const accountData = api.account.getToken.useQuery();
   const accessTokenExpiredAt = accountData.data?.account.expired_at;
+  const accessToken = accountData.data?.account.access_token;
 
   const { playlists, isLoading, isError } = useSpotifyPlaylists();
+
+  // 渡されたIDのプレイリストを取得
+  const getPlaylistData = async (
+    playlistId: string
+  ): Promise<PlaylistObject> => {
+    const url = `https://api.spotify.com/v1/playlists/${playlistId}`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken ?? ""}` },
+    });
+    const data = (await response.json()) as PlaylistObject;
+    return data;
+  };
+
+  // mixPlaylistにプレイリストを追加
+  const addMixPlaylist = async (playlistId: string) => {
+    const isAlreadyAdded = mixPlaylists.items.some(
+      (playlist) => playlist.id === playlistId
+    );
+
+    if (isAlreadyAdded) return;
+
+    const playlistData = await getPlaylistData(playlistId);
+    setMixPlaylists((prevPlaylists) => ({
+      items: [...prevPlaylists.items, playlistData],
+    }));
+  };
+
+  // mixPlaylistからプレイリストを削除
+  const removeMixPlaylist = (index: number) => {
+    setMixPlaylists((prevPlaylists) => {
+      const updatedPlaylists = [...prevPlaylists.items];
+      updatedPlaylists.splice(index, 1);
+      return {
+        items: updatedPlaylists,
+      };
+    });
+  };
 
   if (isLoading) return <Loading />;
   if (isError) return <div>Error...</div>;
@@ -29,32 +79,74 @@ const Playlists = () => {
       ) : (
         <div>
           {playlists && playlists.items ? (
-            <div className="flex gap-10">
-              <div className="bg-gray-200 p-10">
-                <h1 className="mb-6 text-center text-2xl">
+            <div className="grid grid-cols-3 gap-10">
+              {/* My playlists */}
+              <div className="col-span-2 bg-gray-200 p-10">
+                <h1 className="mb-6 text-center text-3xl font-bold">
                   My Spotify playlists.
                 </h1>
 
-                <div className="grid grid-cols-3 gap-6">
-                  {playlists.items.map((item) => (
-                    <div key={item.id}>
-                      <Link href={`/playlists/${item.id}`}>
-                        <Image
-                          src={item.images[0]?.url ?? ""}
-                          alt={item.name}
-                          width={100}
-                          height={100}
-                          style={{ objectFit: "contain" }}
-                        />
-                        <h1>{item.name}</h1>
-                        <h2>{item.id}</h2>
+                <div className="grid grid-cols-2 gap-6">
+                  {playlists.items.map((playlist) => (
+                    <div key={playlist.id}>
+                      <Link href={`/playlists/${playlist.id}`}>
+                        <div className="relative h-80 max-w-full">
+                          <Image
+                            src={playlist.images[0]?.url ?? ""}
+                            alt={playlist.name}
+                            fill
+                            style={{ objectFit: "cover" }}
+                          />
+                        </div>
                       </Link>
+                      <div className="my-4 flex items-center justify-between">
+                        <h1 className="truncate text-2xl">{playlist.name}</h1>
+                        <button
+                          type="button"
+                          className="bg-green-600 px-5 py-2.5 text-center text-sm text-white hover:bg-green-700 focus:outline-none"
+                          onClick={() => void addMixPlaylist(playlist.id)}
+                        >
+                          Add
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* Mix playlists */}
               <div className="bg-gray-200 p-10">
-                <h1 className="text-center text-2xl">Mix Playlists</h1>
+                <h1 className="mb-6 text-center text-3xl font-bold">
+                  Mix Playlists
+                </h1>
+                <div className="grid grid-cols-1 gap-6">
+                  {mixPlaylists.items.map((mixPlaylist, index) => (
+                    <div key={mixPlaylist.id}>
+                      <Link href={`/playlists/${mixPlaylist.id}`}>
+                        <div className="relative h-80 max-w-full">
+                          <Image
+                            src={mixPlaylist.images[0]?.url ?? ""}
+                            alt={mixPlaylist.name}
+                            fill
+                            style={{ objectFit: "cover" }}
+                          />
+                        </div>
+                      </Link>
+                      <div className="my-4 flex items-center justify-between">
+                        <h1 className="truncate text-2xl">
+                          {mixPlaylist.name}
+                        </h1>
+                        <button
+                          type="button"
+                          className="bg-green-600 px-5 py-2.5 text-center text-sm text-white hover:bg-green-700 focus:outline-none"
+                          onClick={() => void removeMixPlaylist(index)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           ) : (
