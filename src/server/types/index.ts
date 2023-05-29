@@ -14,27 +14,26 @@ export interface PlaylistImage {
 }
 
 export interface PlaylistObject {
-  collaborative: boolean;
-  description: string;
-  external_urls: { spotify: string };
-  href: string;
+  collaborative?: boolean;
+  description?: string;
+  external_urls?: { spotify: string };
+  href?: string;
   id: string;
   images: PlaylistImage[];
   name: string;
   owner: SpotifyOwner;
-  primary_color: null;
-  public: boolean;
-  snapshot_id: string;
-  tracks: {
-    href: string;
-    total: number;
+  primary_color?: null;
+  public?: boolean;
+  snapshot_id?: string;
+  tracks?: {
+    href?: string;
+    total?: number;
   };
   type: ["playlist"];
-  uri: string;
+  uri?: string;
 }
 
 export interface PlaylistsObject {
-  href: string;
   items: PlaylistObject[];
 }
 
@@ -44,7 +43,7 @@ interface TrackImage {
   url: string;
 }
 
-interface Track {
+export interface Track {
   track: {
     name: string;
     id: string;
@@ -55,7 +54,6 @@ interface Track {
 }
 
 export interface Tracks {
-  href: string;
   items: Track[];
 }
 
