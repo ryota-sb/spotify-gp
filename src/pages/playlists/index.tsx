@@ -19,10 +19,13 @@ const Playlists = () => {
   const [mixPlaylists, setMixPlaylists] = useState<PlaylistsObject>({
     items: [],
   });
+  // 選択したプレイリスト内の全ての曲名を格納する配列
+  const [mixTracks, setMixTracks] = useState({});
 
   useEffect(() => {
     console.log(mixPlaylists);
-  });
+    console.log(mixTracks);
+  }, [mixPlaylists, mixTracks]);
 
   const accountData = api.account.getToken.useQuery();
   const accessTokenExpiredAt = accountData.data?.account.expired_at;
@@ -65,6 +68,30 @@ const Playlists = () => {
         items: updatedPlaylists,
       };
     });
+  };
+
+  // 渡したplaylistIdのプレイリストの曲情報を取得
+  const getTrack = async (playlistId: string): Promise<Tracks> => {
+    const url = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken ?? ""}` },
+    });
+    const data = (await response.json()) as Tracks;
+    return data;
+  };
+
+  // 複数プレイリストの曲情報を一つの配列に格納して取得
+  const getMixTracks = async () => {
+    const playlistsId = mixPlaylists.items.map((item) => item.id);
+    const trackPromises = playlistsId.map((playlistId) => getTrack(playlistId));
+    const tracksData = await Promise.all(trackPromises);
+    const mixTracks = tracksData.flatMap((trackList) =>
+      trackList.items.map((item) => ({
+        id: item.track.id,
+        name: item.track.name,
+      }))
+    );
+    setMixTracks(mixTracks);
   };
 
   if (isLoading) return <Loading />;
@@ -147,6 +174,9 @@ const Playlists = () => {
                     </div>
                   ))}
                 </div>
+                <button onClick={() => void getMixTracks()}>
+                  getMixTracks
+                </button>
               </div>
             </div>
           ) : (
