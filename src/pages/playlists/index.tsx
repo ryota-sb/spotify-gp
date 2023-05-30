@@ -2,14 +2,22 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 
-import type { PlaylistsObject, PlaylistObject, Tracks } from "~/server/types";
+import type {
+  PlaylistsObject,
+  PlaylistObject,
+  Tracks,
+  Track,
+} from "~/server/types";
 
 import { api } from "~/utils/api";
 
 import { isAccessTokenExpired } from "~/utils/token_expired";
 
 // Custom SWR
-import { useSpotifyPlaylists } from "~/hooks/api/spotify";
+import {
+  useSpotifyPlaylists,
+  useSpotifyTracksAudioFeatures,
+} from "~/hooks/api/spotify";
 
 // Components
 import Loading from "~/pages/loading";
@@ -20,7 +28,9 @@ const Playlists = () => {
     items: [],
   });
   // 選択したプレイリスト内の全ての曲名を格納する配列
-  const [mixTracks, setMixTracks] = useState({});
+  const [mixTracks, setMixTracks] = useState<{ items: Track[][] }>({
+    items: [],
+  });
 
   useEffect(() => {
     console.log(mixPlaylists);
@@ -32,6 +42,13 @@ const Playlists = () => {
   const accessToken = accountData.data?.account.access_token;
 
   const { playlists, isLoading, isError } = useSpotifyPlaylists();
+
+  // トラックごとの特徴値を取得
+  // const {
+  //   tracksAudioFeatures,
+  //   isLoading: isTracksAudioFeaturesLoading,
+  //   isError: isTracksAudioFeaturesError,
+  // } = useSpotifyTracksAudioFeatures(trackIds ?? []);
 
   // 渡されたIDのプレイリストを取得
   const getPlaylistData = async (
@@ -61,8 +78,8 @@ const Playlists = () => {
 
   // mixPlaylistからプレイリストを削除
   const removeMixPlaylist = (index: number) => {
-    setMixPlaylists((prevPlaylists) => {
-      const updatedPlaylists = [...prevPlaylists.items];
+    setMixPlaylists((prevPlaylist) => {
+      const updatedPlaylists = [...prevPlaylist.items];
       updatedPlaylists.splice(index, 1);
       return {
         items: updatedPlaylists,
@@ -70,8 +87,25 @@ const Playlists = () => {
     });
   };
 
+  // mixTracksから曲情報を削除
+  const removeMixTrack = (index: number) => {
+    setMixTracks((prevTrack) => {
+      const updatedTracks = [...prevTrack.items];
+      updatedTracks.splice(index, 1);
+      return {
+        items: updatedTracks,
+      };
+    });
+  };
+
+  // 渡されたindex番号のプレイリストと曲情報を両方削除
+  const removeMixState = (index: number) => {
+    removeMixPlaylist(index);
+    removeMixTrack(index);
+  };
+
   // 渡したplaylistIdのプレイリストの曲情報を取得
-  const getTrack = async (playlistId: string): Promise<Tracks> => {
+  const getPlaylistTracks = async (playlistId: string): Promise<Tracks> => {
     const url = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${accessToken ?? ""}` },
@@ -80,18 +114,18 @@ const Playlists = () => {
     return data;
   };
 
-  // 複数プレイリストの曲情報を一つの配列に格納して取得
-  const getMixTracks = async () => {
-    const playlistsId = mixPlaylists.items.map((item) => item.id);
-    const trackPromises = playlistsId.map((playlistId) => getTrack(playlistId));
-    const tracksData = await Promise.all(trackPromises);
-    const mixTracks = tracksData.flatMap((trackList) =>
-      trackList.items.map((item) => ({
-        id: item.track.id,
-        name: item.track.name,
-      }))
-    );
-    setMixTracks(mixTracks);
+  // 渡された複数のplaylistIdのプレイリストの曲情報を取得し、mixTracksステートに保存
+  const getMixTracks = async (playlistIds: string[]) => {
+    const tracks: { items: Track[][] } = { items: [] };
+
+    for (const playlistId of playlistIds) {
+      const playlistTracks = await getPlaylistTracks(playlistId);
+      const playlistItems = playlistTracks.items.map((item) => item);
+      tracks.items.push(playlistItems);
+    }
+    setMixTracks((prevTrack) => ({
+      items: [...prevTrack.items, ...tracks.items],
+    }));
   };
 
   if (isLoading) return <Loading />;
@@ -166,7 +200,7 @@ const Playlists = () => {
                         <button
                           type="button"
                           className="bg-green-600 px-5 py-2.5 text-center text-sm text-white hover:bg-green-700 focus:outline-none"
-                          onClick={() => void removeMixPlaylist(index)}
+                          onClick={() => void removeMixState(index)}
                         >
                           Remove
                         </button>
@@ -174,7 +208,11 @@ const Playlists = () => {
                     </div>
                   ))}
                 </div>
-                <button onClick={() => void getMixTracks()}>
+                <button
+                  onClick={() =>
+                    void getMixTracks(mixPlaylists.items.map((item) => item.id))
+                  }
+                >
                   getMixTracks
                 </button>
               </div>
