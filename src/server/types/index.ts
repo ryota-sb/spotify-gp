@@ -1,4 +1,4 @@
-export interface SpotifyOwner {
+export interface SpotifyOwnerObject {
   display_name: string;
   external_urls: { spotify: string };
   href: string;
@@ -7,7 +7,7 @@ export interface SpotifyOwner {
   url: string;
 }
 
-export interface PlaylistImage {
+export interface PlaylistImageObject {
   height: null;
   width: null;
   url: string;
@@ -19,9 +19,9 @@ export interface PlaylistObject {
   external_urls?: { spotify: string };
   href?: string;
   id: string;
-  images: PlaylistImage[];
+  images: PlaylistImageObject[];
   name: string;
-  owner: SpotifyOwner;
+  owner: SpotifyOwnerObject;
   primary_color?: null;
   public?: boolean;
   snapshot_id?: string;
@@ -37,27 +37,27 @@ export interface PlaylistsObject {
   items: PlaylistObject[];
 }
 
-interface TrackImage {
+interface TrackImageObject {
   height: number;
   width: number;
   url: string;
 }
 
-export interface Track {
+export interface TrackObject {
   track: {
     name: string;
     id: string;
-    album: { images: TrackImage[] };
+    album: { images: TrackImageObject[] };
     popularity: number;
-    type: ["track"];
+    type: "track";
   };
 }
 
-export interface Tracks {
-  items: Track[];
+export interface TracksObject {
+  items: TrackObject[];
 }
 
-export interface AudioFeature {
+export interface AudioFeatureObject {
   acousticness: number;
   analysis_url: string;
   danceability: number;
@@ -78,6 +78,6 @@ export interface AudioFeature {
   valence: number;
 }
 
-export interface AudioFeatures {
-  audio_features: AudioFeature[];
+export interface AudioFeaturesObject {
+  audio_features: AudioFeatureObject[];
 }
