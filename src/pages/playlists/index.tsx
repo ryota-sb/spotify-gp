@@ -7,6 +7,7 @@ import type {
   PlaylistObject,
   TracksObject,
   TrackObject,
+  AudioFeaturesObject,
 } from "~/server/types";
 
 import { api } from "~/utils/api";
@@ -14,10 +15,7 @@ import { api } from "~/utils/api";
 import { isAccessTokenExpired } from "~/utils/token_expired";
 
 // Custom SWR
-import {
-  useSpotifyPlaylists,
-  useSpotifyTracksAudioFeatures,
-} from "~/hooks/api/spotify";
+import { useSpotifyPlaylists } from "~/hooks/api/spotify";
 
 // Components
 import Loading from "~/pages/loading";
@@ -37,14 +35,8 @@ const Playlists = () => {
   const accessTokenExpiredAt = accountData.data?.account.expired_at;
   const accessToken = accountData.data?.account.access_token;
 
+  // ログインユーザーのプレイリスト全取得
   const { playlists, isLoading, isError } = useSpotifyPlaylists();
-
-  // トラックごとの特徴値を取得
-  // const {
-  //   tracksAudioFeatures,
-  //   isLoading: isTracksAudioFeaturesLoading,
-  //   isError: isTracksAudioFeaturesError,
-  // } = useSpotifyTracksAudioFeatures(trackIds ?? []);
 
   /**
    * 渡されたIDのプレイリストを取得
@@ -151,6 +143,26 @@ const Playlists = () => {
     removeMixTrack(index);
   };
 
+  /**
+   * 渡されたトラックIDの配列からトラックごとの特徴データを返す
+   * @param trackIds トラックIDの配列
+   * @returns トラックの特徴データのオブジェクト配列
+   */
+  const getSpotifyTracksAudioFeatures = async () => {
+    const trackIds = mixTracks.items.flatMap((itemArray) =>
+      itemArray.map((item) => item.track.id)
+    );
+    const url = `https://api.spotify.com/v1/audio-features?ids=${trackIds.join(
+      "%2C"
+    )}`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken ?? ""}` },
+    });
+    const data = (await response.json()) as AudioFeaturesObject;
+    console.log(data);
+    return data;
+  };
+
   // 値 確認
   useEffect(() => {
     console.log(mixPlaylists);
@@ -230,7 +242,7 @@ const Playlists = () => {
                         </h1>
                         <button
                           type="button"
-                          className="bg-green-600 px-5 py-2.5 text-center text-sm text-white hover:bg-green-700 focus:outline-none"
+                          className="bg-red-500 px-5 py-2.5 text-center text-sm text-white hover:bg-red-600 focus:outline-none"
                           onClick={() => void handleRemoveMixState(index)}
                         >
                           Remove
@@ -239,12 +251,8 @@ const Playlists = () => {
                     </div>
                   ))}
                 </div>
-                <button
-                  onClick={() =>
-                    void addMixTracks(mixPlaylists.items.map((item) => item.id))
-                  }
-                >
-                  getMixTracks
+                <button onClick={() => void getSpotifyTracksAudioFeatures()}>
+                  ミックストラックのIDs
                 </button>
               </div>
             </div>
