@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 
+import { useRouter } from "next/router";
+
 import type {
   PlaylistsObject,
   PlaylistObject,
@@ -26,6 +28,7 @@ import BPMSelector from "~/components/BPMSelector";
 import Modal from "~/components/Modal";
 
 const Playlists = () => {
+  const router = useRouter();
   // 選択したプレイリストを格納する配列
   const [mixPlaylists, setMixPlaylists] = useState<PlaylistsObject>({
     items: [],
@@ -191,7 +194,9 @@ const Playlists = () => {
    * @returns 作成したプレイリストオブジェクト
    */
   const createEmptyPlaylist = async (formInput: FormInput) => {
-    const url = `https://api.spotify.com/v1/users/${getProviderAccountId}/playlists`;
+    const url = `https://api.spotify.com/v1/users/${
+      getProviderAccountId ?? ""
+    }/playlists`;
     const inputData = {
       name: formInput.name,
       description: "Playlist description",
@@ -244,8 +249,9 @@ const Playlists = () => {
     defaultValues: { name: "" },
   });
 
-  const onSubmit: SubmitHandler<FormInput> = async (inputValue) => {
-    await createMixPlaylistByBPM(inputValue); // MIXブレイリスト作成
+  const onSubmit = async (inputValue: FormInput) => {
+    await createMixPlaylistByBPM(inputValue);
+    router.reload();
   };
 
   // 値 確認
@@ -345,7 +351,11 @@ const Playlists = () => {
 
                 <Modal buttonText={"作成"}>
                   <div className="flex items-center justify-center">
-                    <form onSubmit={handleSubmit(onSubmit)}>
+                    <form
+                      onSubmit={(...args) =>
+                        void handleSubmit(onSubmit)(...args)
+                      }
+                    >
                       <div className="flex flex-col">
                         <input
                           type="text"
