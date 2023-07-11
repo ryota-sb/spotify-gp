@@ -3,8 +3,7 @@ import { api } from "~/utils/api";
 import type {
   PlaylistsObject,
   PlaylistObject,
-  Tracks,
-  AudioFeatures,
+  TracksObject,
 } from "~/server/types";
 
 const fetcher = (url: string, access_token: string) =>
@@ -48,7 +47,7 @@ const useSpotifyPlaylist = (playlistId: string) => {
 const useSpotifyPlaylistTracks = (playlistId: string) => {
   const tokenData = api.account.getToken.useQuery();
   const accessToken = tokenData.data?.account.access_token;
-  const { data, error } = useSWR<Tracks, Error>(
+  const { data, error } = useSWR<TracksObject, Error>(
     `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
     (url: string) => fetcher(url, accessToken ?? "").then((res) => res.json())
   );
@@ -60,40 +59,4 @@ const useSpotifyPlaylistTracks = (playlistId: string) => {
   };
 };
 
-const useSpotifyTrackAudioFeatures = (trackId: string) => {
-  const tokenData = api.account.getToken.useQuery();
-  const accessToken = tokenData.data?.account.access_token;
-  const { data, error } = useSWR<AudioFeatures, Error>(
-    `https://api.spotify.com/v1/audio-features/${trackId}`,
-    (url: string) => fetcher(url, accessToken ?? "").then((res) => res.json())
-  );
-
-  return {
-    trackAudioFeatures: data,
-    isLoading: !error && !data,
-    isError: error,
-  };
-};
-
-const useSpotifyTracksAudioFeatures = (trackIds: string[]) => {
-  const tokenData = api.account.getToken.useQuery();
-  const accessToken = tokenData.data?.account.access_token;
-  const { data, error } = useSWR<AudioFeatures, Error>(
-    `https://api.spotify.com/v1/audio-features?ids=${trackIds.join("%2C")}`,
-    (url: string) => fetcher(url, accessToken ?? "").then((res) => res.json())
-  );
-
-  return {
-    tracksAudioFeatures: data,
-    isLoading: !error && !data,
-    isError: error,
-  };
-};
-
-export {
-  useSpotifyPlaylists,
-  useSpotifyPlaylist,
-  useSpotifyPlaylistTracks,
-  useSpotifyTrackAudioFeatures,
-  useSpotifyTracksAudioFeatures,
-};
+export { useSpotifyPlaylists, useSpotifyPlaylist, useSpotifyPlaylistTracks };
