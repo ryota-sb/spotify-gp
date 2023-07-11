@@ -1,22 +1,15 @@
 import { useRouter } from "next/router";
 import Image from "next/image";
 
-import { useState, useEffect } from "react";
-
 import { api } from "~/utils/api";
 import { isAccessTokenExpired } from "~/utils/token_expired";
 
 import Layout from "~/components/Layout";
 import Loading from "~/pages/loading";
 
-import {
-  useSpotifyPlaylistTracks,
-  useSpotifyTracksAudioFeatures,
-} from "~/hooks/api/spotify";
+import { useSpotifyPlaylistTracks } from "~/hooks/api/spotify";
 
 const Playlist = () => {
-  const [trackIds, setTrackIds] = useState<string[]>([]);
-
   const accountData = api.account.getToken.useQuery();
   const accessTokenExpiredAt = accountData.data?.account.expired_at;
 
@@ -31,25 +24,8 @@ const Playlist = () => {
     isError: isTracksError,
   } = useSpotifyPlaylistTracks(playlistId ?? "");
 
-  // トラックごとの特徴値を取得
-  const {
-    tracksAudioFeatures,
-    isLoading: isTracksAudioFeaturesLoading,
-    isError: isTracksAudioFeaturesError,
-  } = useSpotifyTracksAudioFeatures(trackIds ?? []);
-
-  useEffect(() => {
-    if (tracks && tracks.items) {
-      const updatedTrackIds = tracks?.items.map((item) => item.track.id);
-      setTrackIds(updatedTrackIds);
-      console.log(tracksAudioFeatures);
-    }
-  }, [tracks, tracksAudioFeatures]);
-
-  if (isTracksLoading && isTracksAudioFeaturesLoading) return <Loading />;
+  if (isTracksLoading) return <Loading />;
   if (isTracksError) return <div>Error fetching Tracks data.</div>;
-  if (isTracksAudioFeaturesError)
-    return <div>Error fetching Track Audio Features data.</div>;
 
   return (
     <Layout>
