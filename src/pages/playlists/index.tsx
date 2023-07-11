@@ -249,7 +249,7 @@ const Playlists = () => {
     defaultValues: { name: "" },
   });
 
-  const onSubmit = async (inputValue: FormInput) => {
+  const onSubmit: SubmitHandler<FormInput> = async (inputValue) => {
     await createMixPlaylistByBPM(inputValue);
     router.reload();
   };
