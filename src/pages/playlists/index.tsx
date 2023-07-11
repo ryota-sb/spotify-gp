@@ -272,18 +272,18 @@ const Playlists = () => {
       ) : (
         <div>
           {playlists && playlists.items ? (
-            <div className="grid grid-cols-3 gap-10">
+            <div className="grid grid-cols-1 gap-y-6 md:grid-cols-3 md:gap-10">
               {/* My playlists */}
               <div className="col-span-2 bg-gray-200 p-10">
                 <h1 className="mb-6 text-center text-3xl font-bold">
                   My playlists
                 </h1>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   {playlists.items.map((playlist) => (
                     <div key={playlist.id}>
                       <Link href={`/playlists/${playlist.id}`}>
-                        <div className="relative h-80 max-w-full">
+                        <div className="relative h-60 max-w-full md:h-80">
                           <Image
                             src={playlist.images[0]?.url ?? ""}
                             alt={playlist.name}
@@ -314,7 +314,7 @@ const Playlists = () => {
                 <h1 className="mb-6 text-center text-3xl font-bold">
                   Mix Playlists
                 </h1>
-                <div className="grid grid-cols-1 gap-6">
+                <div className="">
                   {mixPlaylists.items.map((mixPlaylist, index) => (
                     <div key={mixPlaylist.id}>
                       <Link href={`/playlists/${mixPlaylist.id}`}>
@@ -342,43 +342,48 @@ const Playlists = () => {
                     </div>
                   ))}
                 </div>
-                <BPMSelector
-                  minBPM={minBPM}
-                  maxBPM={maxBPM}
-                  setMinBPM={setMinBPM}
-                  setMaxBPM={setMaxBPM}
-                />
 
-                <Modal buttonText={"作成"}>
-                  <div className="flex items-center justify-center">
-                    <form
-                      onSubmit={(...args) =>
-                        void handleSubmit(onSubmit)(...args)
-                      }
-                    >
-                      <div className="flex flex-col">
-                        <input
-                          type="text"
-                          placeholder="プレイリスト名を入力してください"
-                          className="p-4 outline-none"
-                          {...register("name", { required: true })}
-                        />
-                        {errors.name && (
-                          <div className="text-red-500">
-                            プレイリスト名は必須です
+                {mixPlaylists.items.length > 0 ? (
+                  <div>
+                    <BPMSelector
+                      minBPM={minBPM}
+                      maxBPM={maxBPM}
+                      setMinBPM={setMinBPM}
+                      setMaxBPM={setMaxBPM}
+                    />
+
+                    <Modal buttonText={"作成"}>
+                      <div className="flex items-center justify-center">
+                        <form
+                          onSubmit={(...args) =>
+                            void handleSubmit(onSubmit)(...args)
+                          }
+                        >
+                          <div className="flex flex-col">
+                            <input
+                              type="text"
+                              placeholder="プレイリスト名を入力してください"
+                              className="p-4 outline-none"
+                              {...register("name", { required: true })}
+                            />
+                            {errors.name && (
+                              <div className="text-red-500">
+                                プレイリスト名は必須です
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
 
-                      <button
-                        type="submit"
-                        className="rounded border border-green-600 bg-transparent px-4 py-2 font-semibold text-green-600 hover:border-transparent hover:bg-green-700 hover:text-white"
-                      >
-                        作成
-                      </button>
-                    </form>
+                          <button
+                            type="submit"
+                            className="rounded border border-green-600 bg-transparent px-4 py-2 font-semibold text-green-600 hover:border-transparent hover:bg-green-700 hover:text-white"
+                          >
+                            作成
+                          </button>
+                        </form>
+                      </div>
+                    </Modal>
                   </div>
-                </Modal>
+                ) : null}
               </div>
             </div>
           ) : (
