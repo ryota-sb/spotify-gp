@@ -17,8 +17,13 @@ import { isAccessTokenExpired } from "~/utils/token_expired";
 // Custom SWR
 import { useSpotifyPlaylists } from "~/hooks/api/spotify";
 
-// Components
+// React Hook Form
+import { useForm, type SubmitHandler } from "react-hook-form";
+
+// Pages and Components
 import Loading from "~/pages/loading";
+import BPMSelector from "~/components/BPMSelector";
+import Modal from "~/components/Modal";
 
 const Playlists = () => {
   // 選択したプレイリストを格納する配列
@@ -34,6 +39,9 @@ const Playlists = () => {
   const accountData = api.account.getToken.useQuery();
   const accessTokenExpiredAt = accountData.data?.account.expired_at;
   const accessToken = accountData.data?.account.access_token;
+
+  const providerAccount = api.account.getProviderAccount.useQuery();
+  const getProviderAccountId = providerAccount.data?.account.providerAccountId;
 
   // ログインユーザーのプレイリスト全取得
   const { playlists, isLoading, isError } = useSpotifyPlaylists();
@@ -159,8 +167,85 @@ const Playlists = () => {
       headers: { Authorization: `Bearer ${accessToken ?? ""}` },
     });
     const data = (await response.json()) as AudioFeaturesObject;
-    console.log(data);
     return data;
+  };
+
+  /**
+   * 渡されたBPMのトラックに絞り込み、そのトラックIDを返す
+   * @param minBPM トラックBPMの最初値
+   * @param maxBPM トラックBPMの最大値
+   * @returns BPMで絞り込んだトラックIDの配列
+   */
+  const getFilteredTracksByBPM = async (minBPM: number, maxBPM: number) => {
+    const audio_features = await getSpotifyTracksAudioFeatures();
+    const tracks = audio_features.audio_features.filter(
+      (item) => item.tempo >= minBPM && item.tempo <= maxBPM
+    );
+    const trackIds = tracks.map((track) => `spotify:track:${track.id}`);
+    return trackIds;
+  };
+
+  /**
+   * 空プレイリスト作成
+   * @param formInput inputフォームに入力された値
+   * @returns 作成したプレイリストオブジェクト
+   */
+  const createEmptyPlaylist = async (formInput: FormInput) => {
+    const url = `https://api.spotify.com/v1/users/${getProviderAccountId}/playlists`;
+    const inputData = {
+      name: formInput.name,
+      description: "Playlist description",
+    };
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken ?? ""}`,
+      },
+      body: JSON.stringify(inputData),
+    });
+
+    const data = (await response.json()) as PlaylistObject;
+    return data;
+  };
+
+  /**
+   * プレイリストをミックスし、BPMを揃えた新たなプレイリストを作成
+   * @param formInput inputフォームに入力された値
+   */
+  const createMixPlaylistByBPM = async (formInput: FormInput) => {
+    const emptyPlaylist = await createEmptyPlaylist(formInput);
+    const trackIdsByBPM = await getFilteredTracksByBPM(minBPM, maxBPM);
+    const url = `https://api.spotify.com/v1/playlists/${emptyPlaylist.id}/tracks`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken ?? ""}`,
+      },
+      body: JSON.stringify(trackIdsByBPM),
+    });
+    console.log(response);
+  };
+
+  // BPMの初期値とセット関数
+  const [minBPM, setMinBPM] = useState(80);
+  const [maxBPM, setMaxBPM] = useState(180);
+
+  type FormInput = Pick<PlaylistObject, "name">;
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormInput>({
+    mode: "onChange",
+    defaultValues: { name: "" },
+  });
+
+  const onSubmit: SubmitHandler<FormInput> = async (inputValue) => {
+    await createMixPlaylistByBPM(inputValue); // MIXブレイリスト作成
   };
 
   // 値 確認
@@ -251,9 +336,39 @@ const Playlists = () => {
                     </div>
                   ))}
                 </div>
-                <button onClick={() => void getSpotifyTracksAudioFeatures()}>
-                  ミックストラックのIDs
-                </button>
+                <BPMSelector
+                  minBPM={minBPM}
+                  maxBPM={maxBPM}
+                  setMinBPM={setMinBPM}
+                  setMaxBPM={setMaxBPM}
+                />
+
+                <Modal buttonText={"作成"}>
+                  <div className="flex items-center justify-center">
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                      <div className="flex flex-col">
+                        <input
+                          type="text"
+                          placeholder="プレイリスト名を入力してください"
+                          className="p-4 outline-none"
+                          {...register("name", { required: true })}
+                        />
+                        {errors.name && (
+                          <div className="text-red-500">
+                            プレイリスト名は必須です
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="rounded border border-green-600 bg-transparent px-4 py-2 font-semibold text-green-600 hover:border-transparent hover:bg-green-700 hover:text-white"
+                      >
+                        作成
+                      </button>
+                    </form>
+                  </div>
+                </Modal>
               </div>
             </div>
           ) : (
